@@ -34,7 +34,7 @@
 ### Phase 5: Verification & Deployment
 - [x] Verify Energy Anomaly Detection accuracy — **96.2%** ($\ge 85\%$ ✅)
 - [x] Test end-to-end telemetry streaming to UI dashboard
-- [ ] Commit and Push code to `https://github.com/shaunpatrickj/infosys_Agentic-AI.git`
+- [x] Commit and Push code to `https://github.com/shaunpatrickj/infosys_Agentic-AI.git`
 
 ---
 
