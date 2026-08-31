@@ -1,4 +1,4 @@
-# Python
+# ── Python & Virtual Environments ──
 __pycache__/
 *.py[cod]
 *$py.class
@@ -9,15 +9,33 @@ backend/.venv/
 env/
 venv/
 ENV/
+*.egg-info/
+dist/
+build/
 
-# Databases
+# ── Secrets & Environment Variables ──
+.env
+.env.*
+*.env
+secrets.json
+credentials.json
+*.pem
+*.key
+
+# ── Local & Temporary Databases ──
 *.db-shm
 *.db-wal
+*.sqlite3-journal
 
-# OS
+# ── OS & IDE Artifacts ──
 .DS_Store
 Thumbs.db
-
-# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# ── Internal Documentation & Notes ──
+explanation.md
+how_to_start.md
+todo.md
