@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="FacilityOps Energy Intelligence Dashboard — Real-time energy monitoring powered by AI agents" />
+  <title>FacilityOps · Energy Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=5" />
+</head>
+<body>
+
+  <!-- Ambient Background Orbs -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ─── TOP NAV ─── -->
+  <header class="topnav">
+    <div class="nav-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 2L28 8V16C28 22.627 22.627 28 16 28C9.373 28 4 22.627 4 16V8L16 2Z" stroke="url(#brandGrad)" stroke-width="1.5"/>
+          <path d="M16 8V16L21 13" stroke="url(#brandGrad)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M12 14L16 16V22" stroke="url(#brandGrad)" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <defs>
+            <linearGradient id="brandGrad" x1="4" y1="2" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00E5FF"/>
+              <stop offset="1" stop-color="#7C3AED"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div>
+        <span class="brand-name">FacilityOps</span>
+        <span class="brand-sub">Energy Intelligence</span>
+      </div>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-tab active" id="tab-overview">Overview</button>
+      <button class="nav-tab" id="tab-analytics">Analytics</button>
+      <button class="nav-tab" id="tab-agent">AI Agent</button>
+      <button class="nav-tab" id="tab-alerts">Alerts <span class="badge">3</span></button>
+    </nav>
+
+    <div class="nav-right">
+      <div class="facility-selector">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2"/></svg>
+        <select id="facilitySelect">
+          <option>Campus A — Block 1</option>
+          <option>Campus A — Block 2</option>
+          <option>Campus B — Main Hall</option>
+          <option>Data Center — Floor 3</option>
+        </select>
+      </div>
+      <div class="live-indicator">
+        <span class="live-dot"></span>
+        <span>LIVE</span>
+      </div>
+      <div class="api-status" id="apiStatus" title="API connection status">
+        <span class="api-dot"></span>
+        <span id="apiStatusText">API</span>
+      </div>
+      <div class="nav-time" id="navClock">00:00:00</div>
+    </div>
+  </header>
+
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <span>Connecting to FacilityOps API…</span>
+  </div>
+
+  <!-- ─── MAIN LAYOUT ─── -->
+  <main class="main-grid">
+
+    <!-- ─── LEFT SIDEBAR ─── -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <span class="sidebar-label">SYSTEMS</span>
+        <div class="sys-list">
+          <div class="sys-item active" id="sys-all">
+            <div class="sys-icon-wrap" style="--c:#00E5FF">
+              <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="2" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="11" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="11" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+            </div>
+            <span>All Systems</span>
+            <span class="sys-badge" style="--bc:#00E5FF">Live</span>
+          </div>
+          <div class="sys-item" id="sys-hvac">
+            <div class="sys-icon-wrap" style="--c:#A78BFA">
+              <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M10 2v3M10 15v3M2 10h3M15 10h3M4.93 4.93l2.12 2.12M12.95 12.95l2.12 2.12M4.93 15.07l2.12-2.12M12.95 7.05l2.12-2.12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <span>HVAC</span>
+            <span class="sys-percent">45%</span>
+          </div>
+          <div class="sys-item" id="sys-lighting">
+            <div class="sys-icon-wrap" style="--c:#FCD34D">
+              <svg viewBox="0 0 20 20" fill="none"><path d="M10 2a6 6 0 00-3 11.197V15a1 1 0 001 1h4a1 1 0 001-1v-1.803A6 6 0 0010 2z" stroke="currentColor" stroke-width="1.5"/><path d="M8 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <span>Lighting</span>
+            <span class="sys-percent">28%</span>
+          </div>
+          <div class="sys-item" id="sys-equipment">
+            <div class="sys-icon-wrap" style="--c:#34D399">
+              <svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12M10 4v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/></svg>
+            </div>
+            <span>Equipment</span>
+            <span class="sys-percent">18%</span>
+          </div>
+          <div class="sys-item" id="sys-other">
+            <div class="sys-icon-wrap" style="--c:#F87171">
+              <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 7v3l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <span>Other</span>
+            <span class="sys-percent">9%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <span class="sidebar-label">EFFICIENCY SCORE</span>
+        <div class="efficiency-ring-wrap">
+          <canvas id="efficiencyRing" width="120" height="120"></canvas>
+          <div class="efficiency-center">
+            <span class="eff-value" id="effValue">87</span>
+            <span class="eff-unit">/ 100</span>
+          </div>
+        </div>
+        <div class="eff-legend">
+          <span class="eff-dot" style="background:#00E5FF"></span>
+          <span>Efficiency</span>
+          <span class="eff-dot" style="background:#1E293B;margin-left:8px"></span>
+          <span>Gap</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <span class="sidebar-label">QUICK ACTIONS</span>
+        <button class="qa-btn" id="btnOptimize">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Run Optimization
+        </button>
+        <button class="qa-btn qa-btn-ghost" id="btnReport">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2"/></svg>
+          Export Report
+        </button>
+      </div>
+    </aside>
+
+    <!-- ─── CONTENT AREA ─── -->
+    <section class="content-area">
+
+      <!-- ════════════ VIEW 1: OVERVIEW ════════════ -->
+      <div class="tab-view active" id="view-overview">
+        <!-- KPI ROW -->
+        <div class="kpi-row">
+          <div class="kpi-card" id="kpi-energy">
+            <div class="kpi-icon-ring" style="--kc: #00E5FF">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-label">Total Energy</span>
+              <div class="kpi-value-row">
+                <span class="kpi-value" id="kpi-energy-val">4,827</span>
+                <span class="kpi-unit">kWh</span>
+              </div>
+              <div class="kpi-change up">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="currentColor" stroke-width="2.5"/></svg>
+                +2.4% vs yesterday
+              </div>
+            </div>
+            <div class="kpi-sparkline" id="spark-energy"></div>
+          </div>
+
+          <div class="kpi-card" id="kpi-cost">
+            <div class="kpi-icon-ring" style="--kc: #34D399">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-label">Cost Savings</span>
+              <div class="kpi-value-row">
+                <span class="kpi-value" id="kpi-cost-val">₹1,284</span>
+                <span class="kpi-unit">/ day</span>
+              </div>
+              <div class="kpi-change up">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="currentColor" stroke-width="2.5"/></svg>
+                +8.1% vs last week
+              </div>
+            </div>
+            <div class="kpi-sparkline" id="spark-cost"></div>
+          </div>
+
+          <div class="kpi-card" id="kpi-carbon">
+            <div class="kpi-icon-ring" style="--kc: #A78BFA">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="2"/></svg>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-label">Carbon Reduced</span>
+              <div class="kpi-value-row">
+                <span class="kpi-value" id="kpi-carbon-val">3.2</span>
+                <span class="kpi-unit">tCO₂e</span>
+              </div>
+              <div class="kpi-change up">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><polyline points="18 15 12 9 6 15" stroke="currentColor" stroke-width="2.5"/></svg>
+                −12% vs baseline
+              </div>
+            </div>
+            <div class="kpi-sparkline" id="spark-carbon"></div>
+          </div>
+
+          <div class="kpi-card" id="kpi-demand">
+            <div class="kpi-icon-ring" style="--kc: #F87171">
+              <svg viewBox="0 0 24 24" fill="none"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-label">Peak Demand</span>
+              <div class="kpi-value-row">
+                <span class="kpi-value" id="kpi-demand-val">312</span>
+                <span class="kpi-unit">kW</span>
+              </div>
+              <div class="kpi-change down">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2.5"/></svg>
+                −5.3% vs yesterday
+              </div>
+            </div>
+            <div class="kpi-sparkline" id="spark-demand"></div>
+          </div>
+        </div>
+
+        <!-- CHART ROW -->
+        <div class="chart-row">
+          <div class="chart-card chart-main">
+            <div class="chart-header">
+              <div>
+                <h3 class="chart-title">Energy Consumption</h3>
+                <p class="chart-sub">Electricity · Water · HVAC Load — last 24 hours</p>
+              </div>
+              <div class="chart-controls">
+                <button class="ctrl-btn active" data-range="24h">24H</button>
+                <button class="ctrl-btn" data-range="7d">7D</button>
+                <button class="ctrl-btn" data-range="30d">30D</button>
+              </div>
+            </div>
+            <canvas id="consumptionChart" height="220"></canvas>
+            <div class="chart-legend">
+              <span class="legend-dot" style="background:#00E5FF"></span><span>Electricity</span>
+              <span class="legend-dot" style="background:#A78BFA"></span><span>HVAC</span>
+              <span class="legend-dot" style="background:#34D399"></span><span>Water</span>
+              <span class="legend-dot" style="background:#FCD34D; opacity:0.5"></span><span>Forecast</span>
+            </div>
+          </div>
+
+          <div class="chart-card chart-donut">
+            <div class="chart-header">
+              <div>
+                <h3 class="chart-title">Load Distribution</h3>
+                <p class="chart-sub">By subsystem · Today</p>
+              </div>
+            </div>
+            <div class="donut-wrap">
+              <canvas id="donutChart" width="180" height="180"></canvas>
+              <div class="donut-center">
+                <span class="donut-total" id="donutTotal">4.8</span>
+                <span class="donut-unit">MWh</span>
+              </div>
+            </div>
+            <div class="donut-legend" id="donutLegend"></div>
+          </div>
+        </div>
+
+        <!-- BOTTOM ROW: Heatmap + Alerts -->
+        <div class="bottom-row">
+          <div class="chart-card heatmap-card">
+            <div class="chart-header">
+              <div>
+                <h3 class="chart-title">Hourly Usage Heatmap</h3>
+                <p class="chart-sub">7-day intensity grid · kWh per hour</p>
+              </div>
+              <div class="heatmap-scale">
+                <span>Low</span>
+                <div class="heatmap-gradient"></div>
+                <span>High</span>
+              </div>
+            </div>
+            <div class="heatmap-grid" id="heatmapGrid"></div>
+            <div class="heatmap-labels-x" id="heatmapLabelsX"></div>
+          </div>
+
+          <div class="chart-card agent-card">
+            <div class="chart-header">
+              <div class="agent-header-left">
+                <div class="agent-avatar">
+                  <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="url(#ag)" stroke-width="1.5"/><path d="M10 16h12M16 10v12" stroke="url(#ag)" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="16" r="4" fill="url(#ag)" opacity="0.3"/><defs><linearGradient id="ag" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse"><stop stop-color="#00E5FF"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs></svg>
+                </div>
+                <div>
+                  <h3 class="chart-title">Energy Agent</h3>
+                  <p class="chart-sub agent-thinking" id="agentStatus">Analyzing facility patterns…</p>
+                </div>
+              </div>
+              <button class="qa-btn" id="btnAgentRun" style="padding:6px 14px;font-size:0.7rem">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+                Analyze
+              </button>
+            </div>
+
+            <div class="agent-insights" id="agentInsights"></div>
+
+            <div class="agent-input-row">
+              <input type="text" class="agent-input" id="agentInput" placeholder="Ask the energy agent anything…" />
+              <button class="agent-send" id="agentSend">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><line x1="22" y1="2" x2="11" y2="13" stroke="currentColor" stroke-width="2"/><polygon points="22 2 15 22 11 13 2 9 22 2" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div><!-- end view-overview -->
+
+      <!-- ════════════ VIEW 2: ANALYTICS ════════════ -->
+      <div class="tab-view" id="view-analytics">
+        <div class="view-header">
+          <div>
+            <h2>Facility Energy Analytics & Subsystem Breakdown</h2>
+            <p>Comprehensive telemetry diagnostics, efficiency trends, and load profiles</p>
+          </div>
+          <button class="qa-btn" id="btnExportAnalytics" style="width:auto">Export CSV Data</button>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="chart-card">
+            <h3 class="chart-title">Subsystem Load & Cost Breakdown</h3>
+            <p class="chart-sub">Average energy consumption, estimated costs, and carbon footprint</p>
+            <div class="table-wrap">
+              <table class="data-table" id="analyticsTable">
+                <thead>
+                  <tr>
+                    <th>Subsystem</th>
+                    <th>Average Load (kW)</th>
+                    <th>Share (%)</th>
+                    <th>Est. Daily Cost (₹)</th>
+                    <th>Carbon Impact</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="analyticsTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <h3 class="chart-title">30-Day Efficiency & Temperature Correlation</h3>
+            <p class="chart-sub">How outdoor climate impacts overall facility performance</p>
+            <div class="stats-card-grid">
+              <div class="stat-pill">
+                <span class="stat-pill-label">Base Temperature</span>
+                <span class="stat-pill-val" id="statTemp">27.4°C</span>
+              </div>
+              <div class="stat-pill">
+                <span class="stat-pill-label">HVAC Sensitivity</span>
+                <span class="stat-pill-val">+4.2% / °C</span>
+              </div>
+              <div class="stat-pill">
+                <span class="stat-pill-label">Occupancy Factor</span>
+                <span class="stat-pill-val" id="statOcc">82.5%</span>
+              </div>
+              <div class="stat-pill">
+                <span class="stat-pill-label">Model Accuracy</span>
+                <span class="stat-pill-val" style="color:var(--green)">96.2%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- end view-analytics -->
+
+      <!-- ════════════ VIEW 3: AI AGENT COMMAND CENTER ════════════ -->
+      <div class="tab-view" id="view-agent">
+        <div class="view-header">
+          <div>
+            <h2>AI Energy Agent Command Center</h2>
+            <p>Real-time machine learning inference, automated optimizations, and Q&A</p>
+          </div>
+          <div class="agent-badge-live">
+            <span class="live-dot"></span>
+            <span>MODEL: ISOLATION FOREST + GRADIENT BOOSTING</span>
+          </div>
+        </div>
+
+        <div class="agent-view-layout">
+          <div class="chart-card agent-chat-card">
+            <h3 class="chart-title">Ask FacilityOps Agent</h3>
+            <p class="chart-sub">Ask diagnostic questions about your facility's energy performance</p>
+
+            <div class="prompt-chips">
+              <button class="chip" onclick="askAgentQuestion('How can we optimize HVAC efficiency?')">⚡ Optimize HVAC</button>
+              <button class="chip" onclick="askAgentQuestion('What is the forecasted peak demand?')">📈 Peak Demand Forecast</button>
+              <button class="chip" onclick="askAgentQuestion('Are there any water leaks detected?')">💧 Water Leak Check</button>
+              <button class="chip" onclick="askAgentQuestion('Summarize energy anomalies in the last 24 hours')">🔍 Anomaly Summary</button>
+            </div>
+
+            <div class="agent-chat-log" id="agentChatLog">
+              <div class="chat-bubble agent">
+                <span class="chat-author">🤖 Energy Agent</span>
+                <p>Hello! I am monitoring your facility's energy telemetry. All models are trained and operational (Isolation Forest accuracy: <strong>96.2%</strong>). Click a suggestion above or ask me anything.</p>
+              </div>
+            </div>
+
+            <div class="agent-input-row" style="margin-top:14px">
+              <input type="text" class="agent-input" id="agentChatInput" placeholder="Ask about HVAC, peak demand, tariffs, anomalies..." />
+              <button class="agent-send" id="agentChatSend">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><line x1="22" y1="2" x2="11" y2="13" stroke="currentColor" stroke-width="2"/><polygon points="22 2 15 22 11 13 2 9 22 2" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Active AI Recommendations</h3>
+              <button class="qa-btn" id="btnApplyAllOpt" style="width:auto;padding:5px 12px;font-size:0.75rem">Apply Optimizations</button>
+            </div>
+            <div class="agent-insights" id="agentViewInsights" style="max-height:400px"></div>
+          </div>
+        </div>
+      </div><!-- end view-agent -->
+
+      <!-- ════════════ VIEW 4: ALERTS MANAGEMENT ════════════ -->
+      <div class="tab-view" id="view-alerts">
+        <div class="view-header">
+          <div>
+            <h2>Facility Incidents & Active Alarms</h2>
+            <p>Threshold violations, equipment failures, and anomaly alerts</p>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="alert-filter-bar">
+            <button class="filter-btn active" data-filter="all">All Alerts</button>
+            <button class="filter-btn" data-filter="critical">🔴 Critical</button>
+            <button class="filter-btn" data-filter="warning">⚡ Warnings</button>
+          </div>
+          <div class="alerts-list-full" id="alertsListFull"></div>
+        </div>
+      </div><!-- end view-alerts -->
+
+    </section><!-- end content-area -->
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="app.js?v=6"></script>
+</body>
+</html>

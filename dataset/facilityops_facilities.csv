@@ -1,0 +1,5 @@
+facility_id,facility_name,facility_type,location,area_sqft,created_at
+1,Campus A — Block 1,campus,"Bangalore, KA",45000.0,2026-08-31 13:47:19
+2,Campus A — Block 2,campus,"Bangalore, KA",38000.0,2026-08-31 13:47:19
+3,Campus B — Main Hall,office,"Hyderabad, TS",22000.0,2026-08-31 13:47:19
+4,Data Center — Floor 3,datacenter,"Chennai, TN",8000.0,2026-08-31 13:47:19

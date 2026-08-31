@@ -1,0 +1,4 @@
+alert_id,facility_id,alert_type,severity,message,metric,value,threshold,resolved,created_at
+1,1,hvac_inefficiency,warning,HVAC running at 142% baseline between 14:00–16:00. Likely setpoint misconfiguration.,hvac_usage,141.0,100.0,0,2026-08-31 13:47:19
+2,1,peak_demand,critical,Forecasted demand spike of 38 kW above contracted capacity at 17:30–18:30.,electricity_usage,338.0,300.0,0,2026-08-31 13:47:19
+3,3,anomaly,warning,Water consumption 23% above expected floor-area baseline. Check for leaks.,water_usage,55.0,45.0,0,2026-08-31 13:47:19
