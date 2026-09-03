@@ -556,33 +556,7 @@ async function reloadAll() {
   ]);
 }
 
-// ─── NAV TABS (SWITCH VIEWS) ──────────────────────────────────────────────────
-function initNavTabs() {
-  document.querySelectorAll('.nav-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
 
-      const targetView = tab.id.replace('tab-', 'view-');
-      document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
-      const viewEl = document.getElementById(targetView);
-      if (viewEl) viewEl.classList.add('active');
-
-      if (tab.id === 'tab-overview') {
-        showToast('📊 Viewing Executive Overview');
-      } else if (tab.id === 'tab-analytics') {
-        showToast('📈 Loading Subsystem Analytics…');
-        loadAnalyticsView();
-      } else if (tab.id === 'tab-agent') {
-        showToast('🤖 AI Agent Command Center Active');
-        loadAgentView();
-      } else if (tab.id === 'tab-alerts') {
-        showToast('🔔 Loading Active Alarms & Incidents');
-        loadAlertsView();
-      }
-    });
-  });
-}
 
 // ─── VIEW 2: ANALYTICS VIEW LOGIC ─────────────────────────────────────────────
 async function loadAnalyticsView() {
@@ -815,6 +789,14 @@ function initAgentInput() {
     chatSend.addEventListener('click', submitAgentChat);
     chatInput.addEventListener('keydown', e => e.key === 'Enter' && submitAgentChat());
   }
+
+  // Maintenance Agent chat
+  const maintInput = document.getElementById('maintChatInput');
+  const maintSend  = document.getElementById('maintChatSend');
+  if (maintSend && maintInput) {
+    maintSend.addEventListener('click', submitMaintenanceChat);
+    maintInput.addEventListener('keydown', e => e.key === 'Enter' && submitMaintenanceChat());
+  }
 }
 
 // ─── QUICK ACTIONS ────────────────────────────────────────────────────────────
@@ -841,7 +823,8 @@ function initQA() {
     window.location.href = `/api/export/report?facility_id=${currentFacilityId}`;
   });
 
-  document.getElementById('btnAgentRun').addEventListener('click', () => runAgent());
+  document.getElementById('btnAgentRun') &&
+    document.getElementById('btnAgentRun').addEventListener('click', () => runAgent());
 }
 
 // ─── API STATUS UI ────────────────────────────────────────────────────────────
@@ -854,15 +837,585 @@ function updateApiStatus(online) {
   if (text) text.textContent = online ? 'API' : 'SIM';
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   MILESTONE 2 — MAINTENANCE DASHBOARD & AGENT SIDEBAR JAVASCRIPT
+   ════════════════════════════════════════════════════════════════════ */
+
+// ─── AGENT SIDEBAR SWITCHING ──────────────────────────────────────────────────
+window.switchAgentView = function(agentKey) {
+  document.querySelectorAll('.agent-sidebar-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.agent-panel').forEach(p => p.classList.remove('active'));
+  const navEl   = document.getElementById(`agentNav-${agentKey}`);
+  const panelEl = document.getElementById(`agentPanel-${agentKey}`);
+  if (navEl)   navEl.classList.add('active');
+  if (panelEl) panelEl.classList.add('active');
+
+  if (agentKey === 'maintenance') {
+    loadMaintAgentPanel();
+  }
+};
+
+// ─── MAINTENANCE CHAT Q&A ─────────────────────────────────────────────────────
+window.askMaintenanceQuestion = function(q) {
+  const input = document.getElementById('maintChatInput');
+  if (input) { input.value = q; submitMaintenanceChat(); }
+};
+
+async function submitMaintenanceChat() {
+  const input   = document.getElementById('maintChatInput');
+  const chatLog = document.getElementById('maintChatLog');
+  if (!input || !chatLog) return;
+  const q = input.value.trim();
+  if (!q) return;
+
+  const userBubble = document.createElement('div');
+  userBubble.className = 'chat-bubble user';
+  userBubble.innerHTML = `<p>${q}</p>`;
+  chatLog.appendChild(userBubble);
+  input.value = '';
+  chatLog.scrollTop = chatLog.scrollHeight;
+
+  const thinkBubble = document.createElement('div');
+  thinkBubble.className = 'chat-bubble agent';
+  thinkBubble.innerHTML = `<span class="chat-author" style="color:#34D399">🔧 Maintenance Agent</span><p><em>Scanning equipment telemetry and running health assessments…</em></p>`;
+  chatLog.appendChild(thinkBubble);
+  chatLog.scrollTop = chatLog.scrollHeight;
+
+  const res = await apiFetch('/api/maintenance/agent/analyze', {
+    method: 'POST',
+    body: JSON.stringify({ facility_id: currentFacilityId, question: q })
+  });
+
+  const answer = res && res.answer
+    ? res.answer
+    : `Maintenance Agent scanned facility assets. Overall health index on track.`;
+
+  thinkBubble.innerHTML = `
+    <span class="chat-author" style="color:#34D399">🔧 Maintenance Agent</span>
+    <p>${answer}</p>
+    ${res && res.critical_count > 0 ? `<p style="margin-top:6px;color:var(--red);font-weight:600">🔴 ${res.critical_count} critical asset(s) require immediate attention.</p>` : ''}
+    ${res && res.warning_count > 0  ? `<p style="margin-top:4px;color:var(--yellow);font-weight:600">⚡ ${res.warning_count} asset(s) in warning state.</p>` : ''}
+  `;
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+// ─── MAINTENANCE AGENT PANEL (in AI Agent tab) ────────────────────────────────
+async function loadMaintAgentPanel() {
+  const res = await apiFetch('/api/assets');
+  const container = document.getElementById('maintAgentInsights');
+  if (!container || !res) return;
+  container.innerHTML = '';
+
+  res.assets.slice(0, 8).forEach((a, idx) => {
+    const hs = a.health_score || 85;
+    const status = (a.health_status || a.status || 'GOOD').toLowerCase();
+    const barColor = { excellent: '#34D399', good: '#2563EB', warning: '#FCD34D', critical: '#F87171' }[status] || '#A78BFA';
+    const item = document.createElement('div');
+    item.className = 'insight-item';
+    item.style.animationDelay = `${idx * 0.06}s`;
+    item.innerHTML = `
+      <span class="insight-icon">${{ AHU:'🌀', Chiller:'❄️', Pump:'💧', Transformer:'⚡', Elevator:'🛗', Genset:'🔋' }[a.asset_type] || '🔧'}</span>
+      <div class="insight-body" style="flex:1">
+        <div class="insight-title" style="display:flex;justify-content:space-between">
+          <span>${a.asset_name}</span>
+          <span class="status-badge ${status}">${(a.health_status || a.status)}</span>
+        </div>
+        <div class="health-bar-wrap" style="margin-top:6px">
+          <div class="health-bar"><div class="health-bar-fill" style="width:${hs}%;background:${barColor}"></div></div>
+          <span class="health-score-label" style="color:${barColor}">${hs}</span>
+        </div>
+        <div class="insight-desc" style="margin-top:4px">${(a.contributing_factors && a.contributing_factors[0]) || 'Operating within normal parameters'}</div>
+      </div>`;
+    container.appendChild(item);
+  });
+
+  const btn = document.getElementById('btnRunMaintAgent');
+  if (btn) btn.onclick = async () => {
+    showToast('🔧 Running Maintenance Agent analysis…');
+    const r = await apiFetch('/api/maintenance/agent/analyze', {
+      method: 'POST', body: JSON.stringify({ facility_id: currentFacilityId })
+    });
+    if (r) {
+      showToast(`✅ Analysis complete: ${r.critical} critical, ${r.warning} warnings, ${r.healthy} healthy`);
+      loadMaintAgentPanel();
+    }
+  };
+}
+
+// ─── MAINTENANCE DASHBOARD VIEW ───────────────────────────────────────────────
+let cachedAssets = [], cachedMaintAlerts = [], maintHealthChart = null, maintRiskChart = null;
+
+async function loadMaintenanceView() {
+  showToast('🔧 Loading Predictive Maintenance System…');
+
+  // KPI overview
+  const ov = await apiFetch(`/api/maintenance/overview?facility_id=${currentFacilityId}`);
+  if (ov) {
+    document.getElementById('maint-kpi-total').textContent   = ov.total_assets;
+    document.getElementById('maint-kpi-healthy').textContent = ov.operational;
+    document.getElementById('maint-kpi-warning').textContent = ov.warning;
+    document.getElementById('maint-kpi-critical').textContent= ov.critical;
+    document.getElementById('maint-kpi-alerts').textContent  = ov.open_alerts;
+    document.getElementById('maint-kpi-wo').textContent      = ov.open_work_orders;
+  }
+
+  // Assets
+  const assetsRes = await apiFetch('/api/assets');
+  if (assetsRes) {
+    cachedAssets = assetsRes.assets;
+    renderAssetTable(cachedAssets);
+    buildHealthDistChart(cachedAssets);
+    buildRiskDistChart(cachedAssets);
+  }
+
+  // Maintenance Alerts
+  const alertsRes = await apiFetch(`/api/maintenance/alerts?facility_id=${currentFacilityId}`);
+  if (alertsRes) {
+    cachedMaintAlerts = alertsRes.alerts;
+    renderMaintAlerts('all');
+  }
+
+  // Work Orders
+  const woRes = await apiFetch(`/api/maintenance/work-orders?facility_id=${currentFacilityId}`);
+  if (woRes) renderWorkOrders(woRes.work_orders);
+
+  initMaintFilters();
+
+  // Run All Assets button
+  const btn = document.getElementById('btnRunAllAssets');
+  if (btn) btn.onclick = async () => {
+    showToast('🔧 Analyzing all assets…');
+    btn.disabled = true;
+    const r = await apiFetch('/api/maintenance/agent/analyze', {
+      method: 'POST', body: JSON.stringify({ facility_id: currentFacilityId })
+    });
+    btn.disabled = false;
+    if (r) {
+      showToast(`✅ Done: ${r.critical} critical, ${r.warning} warnings, ${r.healthy} healthy`);
+      loadMaintenanceView();
+    }
+  };
+}
+
+// ─── ASSET TABLE RENDER ───────────────────────────────────────────────────────
+function renderAssetTable(assets) {
+  const filter = (document.getElementById('assetRiskFilter') || {}).value || 'all';
+  const filtered = filter === 'all' ? assets : assets.filter(a => (a.risk_level || '').toUpperCase() === filter);
+  const tbody = document.getElementById('assetTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  filtered.forEach(a => {
+    const hs = a.health_score || 85;
+    const status = (a.health_status || a.status || 'GOOD').toLowerCase();
+    const risk = (a.risk_level || 'LOW').toLowerCase();
+    const barColor = { excellent: '#34D399', good: '#2563EB', warning: '#FCD34D', critical: '#F87171' }[status] || '#A78BFA';
+    const tr = document.createElement('tr');
+    tr.className = 'asset-row-clickable';
+    tr.onclick = () => openAssetModal(a.asset_id);
+    tr.innerHTML = `
+      <td><strong style="font-size:0.8rem">${a.asset_name}</strong><br><span style="font-size:0.65rem;color:var(--muted);font-family:var(--font-mono)">${a.asset_id}</span></td>
+      <td>${a.asset_type}</td>
+      <td style="font-size:0.75rem">${a.location_zone || '—'}</td>
+      <td>
+        <div class="health-bar-wrap">
+          <div class="health-bar"><div class="health-bar-fill" style="width:${hs}%;background:${barColor}"></div></div>
+          <span class="health-score-label" style="color:${barColor}">${hs}</span>
+        </div>
+      </td>
+      <td><span class="status-badge ${status}">${a.health_status || a.status}</span></td>
+      <td><span class="risk-badge ${risk}">${a.risk_level || 'LOW'}</span></td>
+      <td style="font-size:0.72rem">${a.last_maintenance_date || '—'}</td>
+      <td>
+        <button class="qa-btn" style="width:auto;padding:4px 10px;font-size:0.68rem" onclick="event.stopPropagation();openAssetModal('${a.asset_id}')">Inspect</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ─── MAINTENANCE ALERTS RENDER ────────────────────────────────────────────────
+function renderMaintAlerts(filter) {
+  const container = document.getElementById('maintAlertsList');
+  if (!container) return;
+  container.innerHTML = '';
+  const filtered = filter === 'all' ? cachedMaintAlerts : cachedMaintAlerts.filter(a => a.severity === filter);
+  if (!filtered.length) {
+    container.innerHTML = '<div style="padding:20px;color:var(--muted);text-align:center">No active maintenance alerts for this filter.</div>';
+    return;
+  }
+  filtered.forEach(al => {
+    const icon = al.severity === 'critical' ? '🔴' : '⚡';
+    const div = document.createElement('div');
+    div.className = `maint-alert-item ${al.severity}`;
+    div.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:flex-start;flex:1">
+        <span style="font-size:1.1rem;margin-top:2px">${icon}</span>
+        <div>
+          <div style="font-size:0.78rem;font-weight:700;color:var(--text)">${al.asset_name || al.asset_id} — ${al.alert_type.replace(/_/g,' ').toUpperCase()}</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:3px">${al.description}</div>
+          <div style="font-size:0.68rem;color:var(--text);margin-top:4px">Condition: <strong>${al.detected_condition}</strong></div>
+          <div style="font-size:0.68rem;color:var(--accent);margin-top:2px">→ ${al.recommended_action}</div>
+        </div>
+      </div>
+      <div class="maint-alert-actions">
+        <span class="status-badge ${al.status === 'NEW' ? 'warning' : al.status === 'ACKNOWLEDGED' ? 'good' : 'excellent'}" style="font-size:0.6rem">${al.status}</span>
+        ${al.status === 'NEW' ? `<button class="qa-btn" style="width:auto;padding:4px 10px;font-size:0.68rem" onclick="acknowledgeAlert(${al.alert_id}, this)">Acknowledge</button>` : ''}
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+window.acknowledgeAlert = async function(alertId, btn) {
+  const res = await apiFetch(`/api/maintenance/alerts/${alertId}/acknowledge`, { method: 'POST' });
+  if (res) {
+    btn.textContent = '✅ Done'; btn.disabled = true;
+    showToast('✅ Maintenance alert acknowledged');
+    const al = cachedMaintAlerts.find(a => a.alert_id === alertId);
+    if (al) al.status = 'ACKNOWLEDGED';
+    renderMaintAlerts(document.querySelector('[data-mfilter].active')?.dataset.mfilter || 'all');
+  }
+};
+
+// ─── WORK ORDERS RENDER ───────────────────────────────────────────────────────
+function renderWorkOrders(wos) {
+  const container = document.getElementById('workOrdersList');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!wos || !wos.length) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;padding:12px">No open work orders.</div>';
+    return;
+  }
+  wos.forEach(wo => {
+    const priority = (wo.priority || 'MEDIUM').toLowerCase();
+    const status   = (wo.status || 'OPEN').toLowerCase().replace(' ', '_');
+    const div = document.createElement('div');
+    div.className = 'work-order-card';
+    div.innerHTML = `
+      <div class="wo-header">
+        <span class="wo-id">${wo.work_order_id}</span>
+        <span class="wo-priority ${priority}">${wo.priority}</span>
+      </div>
+      <div class="wo-issue">${wo.issue}</div>
+      <div class="wo-asset">🔧 ${wo.asset_name || wo.asset_id}</div>
+      <div class="wo-status-row">
+        <span class="wo-status-pill ${status}">${wo.status}</span>
+        <div style="display:flex;gap:4px">
+          ${wo.status === 'OPEN' ? `<button class="qa-btn" style="width:auto;padding:3px 8px;font-size:0.65rem" onclick="updateWOStatus('${wo.work_order_id}','IN_PROGRESS', this)">Start</button>` : ''}
+          ${wo.status === 'IN_PROGRESS' ? `<button class="qa-btn" style="width:auto;padding:3px 8px;font-size:0.65rem;background:rgba(52,211,153,0.1);border-color:var(--green)" onclick="updateWOStatus('${wo.work_order_id}','COMPLETED', this)">Complete ✓</button>` : ''}
+        </div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+window.updateWOStatus = async function(woId, status, btn) {
+  const res = await apiFetch(`/api/maintenance/work-orders/${woId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status })
+  });
+  if (res) {
+    showToast(`✅ Work Order ${woId} updated to ${status}`);
+    const woRes = await apiFetch(`/api/maintenance/work-orders?facility_id=${currentFacilityId}`);
+    if (woRes) renderWorkOrders(woRes.work_orders);
+  }
+};
+
+// ─── MAINTENANCE FILTER BUTTONS ───────────────────────────────────────────────
+function initMaintFilters() {
+  document.querySelectorAll('[data-mfilter]').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('[data-mfilter]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderMaintAlerts(btn.dataset.mfilter);
+    };
+  });
+
+  const filterSel = document.getElementById('assetRiskFilter');
+  if (filterSel) filterSel.onchange = () => renderAssetTable(cachedAssets);
+
+  const createWOBtn = document.getElementById('btnCreateWO');
+  if (createWOBtn) createWOBtn.onclick = () => showCreateWOModal();
+}
+
+// ─── HEALTH DISTRIBUTION CHART (COMPACT & OPTIMIZED) ────────────────────────
+function buildHealthDistChart(assets) {
+  const counts = { EXCELLENT: 0, GOOD: 0, WARNING: 0, CRITICAL: 0 };
+  assets.forEach(a => {
+    const s = (a.health_status || a.status || 'GOOD').toUpperCase();
+    if (s in counts) counts[s]++; else counts.GOOD++;
+  });
+  const ctx = document.getElementById('healthDistChart');
+  if (!ctx) return;
+  if (maintHealthChart) maintHealthChart.destroy();
+  maintHealthChart = new Chart(ctx.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Excellent', 'Good', 'Warning', 'Critical'],
+      datasets: [{
+        data: [counts.EXCELLENT, counts.GOOD, counts.WARNING, counts.CRITICAL],
+        backgroundColor: ['#34D399CC', '#2563EBCC', '#FCD34DCC', '#F87171CC'],
+        borderColor:     ['#34D399',   '#2563EB',   '#FCD34D',   '#F87171'],
+        borderWidth: 1.5,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      layout: { padding: { top: 4, bottom: 4, left: 4, right: 4 } },
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            boxWidth: 8,
+            boxHeight: 8,
+            usePointStyle: true,
+            font: { family: 'Space Grotesk', size: 11 },
+            padding: 8,
+            color: '#1A2233'
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.97)',
+          titleColor: '#1A2233',
+          bodyColor: '#7B8FAB',
+          bodyFont: { family: 'JetBrains Mono', size: 11 },
+          padding: 10,
+          borderColor: 'rgba(0,0,0,0.08)',
+          borderWidth: 1
+        }
+      }
+    }
+  });
+}
+
+// ─── RISK DISTRIBUTION CHART (COMPACT & OPTIMIZED) ──────────────────────────
+function buildRiskDistChart(assets) {
+  const riskCounts = { 'Low': 0, 'Medium': 0, 'High': 0, 'Critical': 0 };
+  assets.forEach(a => {
+    const r = (a.risk_level || 'LOW').toUpperCase();
+    if (r === 'CRITICAL') riskCounts['Critical']++;
+    else if (r === 'HIGH') riskCounts['High']++;
+    else if (r === 'MEDIUM') riskCounts['Medium']++;
+    else riskCounts['Low']++;
+  });
+
+  const ctx = document.getElementById('riskDistChart');
+  if (!ctx) return;
+  if (maintRiskChart) maintRiskChart.destroy();
+  maintRiskChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['Low Risk', 'Medium Risk', 'High Risk', 'Critical Risk'],
+      datasets: [{
+        label: 'Assets',
+        data: [riskCounts['Low'], riskCounts['Medium'], riskCounts['High'], riskCounts['Critical']],
+        backgroundColor: ['#34D399CC', '#FCD34DCC', '#FB923CCC', '#F87171CC'],
+        borderColor:     ['#34D399',   '#FCD34D',   '#FB923C',   '#F87171'],
+        borderWidth: 1.5,
+        borderRadius: 5,
+        maxBarThickness: 34
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 6, bottom: 2 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.97)',
+          titleColor: '#1A2233',
+          bodyColor: '#7B8FAB',
+          bodyFont: { family: 'JetBrains Mono', size: 11 },
+          padding: 10
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#7B8FAB', font: { family: 'Space Grotesk', size: 10 } }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { color: '#7B8FAB', font: { family: 'JetBrains Mono', size: 10 }, stepSize: 1 }
+        }
+      }
+    }
+  });
+}
+
+// ─── ASSET DETAIL MODAL ───────────────────────────────────────────────────────
+let assetModal = null;
+function ensureModal() {
+  if (document.getElementById('assetModal')) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay'; overlay.id = 'assetModal';
+  overlay.innerHTML = `<div class="modal-box" id="assetModalBox"></div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeAssetModal(); });
+  document.body.appendChild(overlay);
+}
+
+async function openAssetModal(assetId) {
+  ensureModal();
+  const overlay = document.getElementById('assetModal');
+  const box     = document.getElementById('assetModalBox');
+  box.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">Loading asset data…</div>`;
+  overlay.classList.add('open');
+
+  const data = await apiFetch(`/api/assets/${assetId}`);
+  if (!data) { box.innerHTML = '<div style="padding:20px;color:var(--red)">Failed to load asset data.</div>'; return; }
+
+  const a = data.asset;
+  const tele = (data.telemetry || [])[0] || {};
+  const pred = data.latest_prediction;
+  const hStatus = (a.status || 'OPERATIONAL').toLowerCase();
+  const hs = (data.health_history && data.health_history[0]) ? data.health_history[0].health_score : 85;
+  const factors = (data.health_history && data.health_history[0] && data.health_history[0].contributing_factors)
+    ? JSON.parse(data.health_history[0].contributing_factors || '[]') : [];
+  const barColor = { excellent: '#34D399', good: '#2563EB', warning: '#FCD34D', critical: '#F87171',
+    operational: '#2563EB', maintenance: '#A78BFA' }[hStatus] || '#A78BFA';
+
+  box.innerHTML = `
+    <div class="modal-header">
+      <div>
+        <h3 style="font-size:1.05rem;margin-bottom:4px">${a.asset_name}</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--muted)">${a.asset_id}</span>
+          <span class="status-badge ${hStatus}">${a.status}</span>
+          <span style="font-size:0.7rem;color:var(--muted)">${a.asset_type} · ${a.location_zone}</span>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeAssetModal()">✕</button>
+    </div>
+
+    <!-- Health Score -->
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:16px;background:var(--surface2);border-radius:var(--radius-sm)">
+      <div style="text-align:center;min-width:80px">
+        <div style="font-family:var(--font-mono);font-size:2rem;font-weight:700;color:${barColor}">${hs.toFixed ? hs.toFixed(0) : hs}</div>
+        <div style="font-size:0.65rem;color:var(--muted)">HEALTH SCORE</div>
+      </div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:6px">
+          <span style="color:var(--muted)">Equipment Health Index</span>
+          <span style="font-weight:600">/100</span>
+        </div>
+        <div class="health-bar" style="height:10px"><div class="health-bar-fill" style="width:${hs}%;background:${barColor}"></div></div>
+        ${factors.length ? `<div style="margin-top:8px;font-size:0.7rem;color:var(--muted)">${factors.slice(0,2).join(' · ')}</div>` : ''}
+        ${pred ? `<div style="margin-top:6px;padding:8px;background:var(--surface);border-radius:6px;border:1px solid var(--border)"><span style="font-size:0.68rem;font-weight:700;color:var(--text)">${pred.priority}</span> <span style="font-size:0.68rem;color:var(--muted)">— ${pred.recommended_action}</span></div>` : ''}
+      </div>
+    </div>
+
+    <!-- Live Sensor Tiles -->
+    <div class="modal-sensor-grid">
+      <div class="sensor-tile">
+        <div class="sensor-tile-label">Temperature</div>
+        <div class="sensor-tile-value">${tele.temperature_c ?? '—'}</div>
+        <div class="sensor-tile-unit">°C</div>
+      </div>
+      <div class="sensor-tile">
+        <div class="sensor-tile-label">Vibration</div>
+        <div class="sensor-tile-value">${tele.vibration_mm_s ?? '—'}</div>
+        <div class="sensor-tile-unit">mm/s</div>
+      </div>
+      <div class="sensor-tile">
+        <div class="sensor-tile-label">Current</div>
+        <div class="sensor-tile-value">${tele.current_amps ?? '—'}</div>
+        <div class="sensor-tile-unit">A</div>
+      </div>
+      <div class="sensor-tile">
+        <div class="sensor-tile-label">Voltage</div>
+        <div class="sensor-tile-value">${tele.voltage_v ?? '—'}</div>
+        <div class="sensor-tile-unit">V</div>
+      </div>
+    </div>
+
+    <!-- Info Grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.75rem;margin-bottom:16px">
+      <div><span style="color:var(--muted)">Installed:</span> <strong>${a.installation_date || '—'}</strong></div>
+      <div><span style="color:var(--muted)">Last Maintenance:</span> <strong>${a.last_maintenance_date || '—'}</strong></div>
+      <div><span style="color:var(--muted)">Operating Hours:</span> <strong>${Number(a.operating_hours || 0).toLocaleString()} hrs</strong></div>
+      <div><span style="color:var(--muted)">Facility ID:</span> <strong>${a.facility_id}</strong></div>
+    </div>
+
+    <!-- Alerts -->
+    ${data.alerts && data.alerts.length ? `
+    <div style="margin-bottom:16px">
+      <div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;color:var(--text)">Active Alerts (${data.alerts.length})</div>
+      ${data.alerts.slice(0,3).map(al => `
+        <div class="maint-alert-item ${al.severity}" style="margin-bottom:6px">
+          <div style="font-size:0.72rem"><strong>${al.alert_type.replace(/_/g,' ').toUpperCase()}</strong>
+          <p style="color:var(--muted);margin-top:2px">${al.description}</p></div>
+          <span class="status-badge ${al.status.toLowerCase()}">${al.status}</span>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <!-- Work Orders -->
+    ${data.work_orders && data.work_orders.length ? `
+    <div style="margin-bottom:16px">
+      <div style="font-size:0.78rem;font-weight:600;margin-bottom:8px;color:var(--text)">Work Orders</div>
+      ${data.work_orders.map(wo => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--surface2);border-radius:6px;margin-bottom:6px;font-size:0.72rem">
+          <div><span style="font-family:var(--font-mono);color:var(--accent)">${wo.work_order_id}</span> — ${wo.issue}</div>
+          <span class="wo-status-pill ${wo.status.toLowerCase()}">${wo.status}</span>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <!-- Footnote -->
+    <div style="font-size:0.65rem;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+      ⚠️ DEMO/SIMULATION DATA — Sensor readings generated from synthetic telemetry model. Replace with real IoT data source for production use.
+    </div>
+  `;
+}
+
+window.closeAssetModal = function() {
+  const overlay = document.getElementById('assetModal');
+  if (overlay) overlay.classList.remove('open');
+};
+
+function showCreateWOModal() {
+  showToast('ℹ️ Select an asset from the table and click Inspect to create a work order');
+}
+
+// ─── UPDATED NAV TABS (includes maintenance tab) ──────────────────────────────
+function initNavTabs() {
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      const targetView = tab.id.replace('tab-', 'view-');
+      document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+      const viewEl = document.getElementById(targetView);
+      if (viewEl) viewEl.classList.add('active');
+
+      if (tab.id === 'tab-overview') {
+        showToast('📊 Viewing Executive Overview');
+      } else if (tab.id === 'tab-analytics') {
+        showToast('📈 Loading Subsystem Analytics…');
+        loadAnalyticsView();
+      } else if (tab.id === 'tab-maintenance') {
+        loadMaintenanceView();
+      } else if (tab.id === 'tab-agent') {
+        showToast('🤖 AI Agent Command Center');
+        loadAgentView();
+      } else if (tab.id === 'tab-alerts') {
+        showToast('🔔 Loading Active Alarms & Incidents');
+        loadAlertsView();
+      }
+    });
+  });
+}
+
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   startClock();
 
-  // Check API health first
   const health = await apiFetch('/api/health');
   updateApiStatus(apiAvailable);
 
-  // Hide loading overlay
   const overlay = document.getElementById('loadingOverlay');
   if (overlay) overlay.classList.add('hidden');
 
@@ -874,10 +1427,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     showToast('⚠️ Simulation mode — API server not running');
   }
 
-  // Load facilities from API or use defaults
   await loadFacilities();
 
-  // Load all dashboard components
   await Promise.all([
     loadOverview(),
     buildConsumptionChart(),
@@ -885,16 +1436,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     buildHeatmap(),
   ]);
 
-  // AI Agent (slight delay for UX)
   setTimeout(() => runAgent(), 800);
 
-  // Start live ticker
   startLiveTicker();
-
-  // Wire up interactions
   initNavTabs();
   initSysItems();
   initChartControls();
   initAgentInput();
   initQA();
 });
+

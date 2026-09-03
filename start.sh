@@ -21,13 +21,13 @@ if ! command -v python3 &>/dev/null; then
   exit 1
 fi
 PYTHON=$(command -v python3)
-echo "✅ Python: $($PYTHON --version)"
+echo "✅ Python: $("$PYTHON" --version)"
 
 # ── Step 2: Virtual environment ──────────────────────────────────────────────
 VENV_DIR="$BACKEND_DIR/.venv"
 if [ ! -d "$VENV_DIR" ]; then
   echo "📦 Creating virtual environment…"
-  $PYTHON -m venv "$VENV_DIR"
+  "$PYTHON" -m venv "$VENV_DIR"
 fi
 source "$VENV_DIR/bin/activate"
 echo "✅ Virtual environment active"
@@ -43,16 +43,16 @@ echo "✅ Dependencies installed"
 echo ""
 echo "── Phase 1: Database & Data Engine ────────────────────────"
 cd "$BACKEND_DIR"
-$PYTHON seed_data.py
+"$PYTHON" seed_data.py
 
 # ── Step 5: Phase 2 — AI model training ─────────────────────────────────────
 echo ""
 echo "── Phase 2: AI Engine — Training Models ───────────────────"
-$PYTHON ai_engine.py
+"$PYTHON" ai_engine.py
 
 echo ""
 echo "── Verification ────────────────────────────────────────────"
-$PYTHON -c "
+"$PYTHON" -c "
 import sys, os
 sys.path.insert(0, '.')
 from ai_engine import check_accuracy

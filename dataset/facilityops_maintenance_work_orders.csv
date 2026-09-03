@@ -1,0 +1,3 @@
+work_order_id,asset_id,facility_id,issue,priority,recommended_action,status,created_at,updated_at
+WO-2026-001,PUMP-002,2,Critical Motor Overheating & Impeller Jamming,URGENT,"Replace motor bearings, clear impeller debris, and verify thermal overload relay.",OPEN,2026-09-03 14:47:19,2026-09-03 14:47:19
+WO-2026-002,CHILLER-001,1,Compressor Shaft Vibration & Alignment Inspection,HIGH,Perform laser alignment of compressor shaft and check oil filter differential pressure.,IN_PROGRESS,2026-09-03 14:47:19,2026-09-03 14:47:19

@@ -1,8 +1,8 @@
 """
 main.py — FacilityOps FastAPI Backend
-Phase 3: All API endpoints + static file serving for dashboard
+Milestone 1 + Milestone 2: All API endpoints + static file serving for dashboard
 
-Endpoints:
+Milestone 1 Endpoints (Energy Intelligence):
   GET  /api/energy/overview          KPI metrics (live telemetry + DB aggregation)
   GET  /api/energy/distribution      Subsystem breakdown
   GET  /api/energy/forecast          Historical + predicted 24h consumption
@@ -10,10 +10,25 @@ Endpoints:
   POST /api/energy/agent/analyze     Trigger full agent analysis
   GET  /api/energy/alerts            Active alerts
   GET  /api/health                   Health check + model status
+
+Milestone 2 Endpoints (Predictive Maintenance):
+  GET  /api/maintenance/overview              KPI: totals, healthy/warning/critical/alerts
+  GET  /api/assets                            List all monitored assets with latest health
+  GET  /api/assets/{asset_id}                 Asset detail + telemetry history
+  GET  /api/assets/{asset_id}/health          Health score + contributing factors
+  POST /api/maintenance/agent/analyze         Run maintenance agent or answer Q&A
+  GET  /api/maintenance/predictions           Maintenance risk predictions for all assets
+  GET  /api/maintenance/alerts                All active maintenance alerts
+  POST /api/maintenance/alerts/{id}/acknowledge  Acknowledge an alert
+  POST /api/maintenance/alerts/{id}/resolve   Resolve an alert
+  GET  /api/maintenance/work-orders           List all work orders
+  POST /api/maintenance/work-orders           Create a new work order
+  PATCH /api/maintenance/work-orders/{id}     Update work order status
 """
 
 import os
 import sys
+import json
 from pathlib import Path
 from datetime import datetime
 
@@ -34,6 +49,7 @@ from ai_engine import (
     generate_recommendations,
     train_all,
 )
+from maintenance_agent import get_maintenance_agent
 
 # ── App Setup ─────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -78,6 +94,20 @@ if DASHBOARD_DIR.exists():
 class AnalyzeRequest(BaseModel):
     facility_id: int = 1
     question:    str = ""
+
+class MaintenanceAnalyzeRequest(BaseModel):
+    facility_id: int = 1
+    asset_id:    str = ""
+    question:    str = ""
+
+class WorkOrderCreateRequest(BaseModel):
+    asset_id:           str
+    issue:              str
+    priority:           str = "MEDIUM"   # LOW / MEDIUM / HIGH / URGENT
+    recommended_action: str
+
+class WorkOrderUpdateRequest(BaseModel):
+    status: str   # OPEN / IN_PROGRESS / COMPLETED
 
 
 # ── Helper ────────────────────────────────────────────────────────────────────
@@ -493,6 +523,324 @@ Floor Area:    {fac.get('area_sqft', 'N/A'):,} sq.ft.
         media_type="text/plain",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MILESTONE 2 — PREDICTIVE MAINTENANCE ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── GET /api/maintenance/overview ────────────────────────────────────────────
+@app.get("/api/maintenance/overview")
+async def maintenance_overview(facility_id: int = Query(1)):
+    """KPI metrics for the Predictive Maintenance dashboard."""
+    facility_or_404(facility_id)
+    conn = get_connection()
+
+    total_assets = conn.execute("SELECT COUNT(*) n FROM ASSETS WHERE facility_id=?", (facility_id,)).fetchone()["n"]
+    status_counts = {r["status"]: r["cnt"] for r in conn.execute("""
+        SELECT status, COUNT(*) cnt FROM ASSETS WHERE facility_id=? GROUP BY status
+    """, (facility_id,)).fetchall()}
+
+    open_alerts = conn.execute("""
+        SELECT COUNT(*) n FROM MAINTENANCE_ALERTS
+        WHERE facility_id=? AND status IN ('NEW', 'ACKNOWLEDGED')
+    """, (facility_id,)).fetchone()["n"]
+
+    open_wos = conn.execute("""
+        SELECT COUNT(*) n FROM MAINTENANCE_WORK_ORDERS
+        WHERE facility_id=? AND status != 'COMPLETED'
+    """, (facility_id,)).fetchone()["n"]
+
+    avg_health_row = conn.execute("""
+        SELECT AVG(eh.health_score) avg_hs
+        FROM EQUIPMENT_HEALTH eh
+        JOIN ASSETS a ON a.asset_id = eh.asset_id
+        WHERE a.facility_id=?
+          AND eh.evaluated_at = (SELECT MAX(eh2.evaluated_at) FROM EQUIPMENT_HEALTH eh2 WHERE eh2.asset_id = eh.asset_id)
+    """, (facility_id,)).fetchone()
+    conn.close()
+
+    avg_health = avg_health_row["avg_hs"] if avg_health_row and avg_health_row["avg_hs"] else 85.0
+
+    return {
+        "facility_id":      facility_id,
+        "total_assets":     total_assets,
+        "operational":      status_counts.get("OPERATIONAL", 0) + status_counts.get("EXCELLENT", 0) + status_counts.get("GOOD", 0),
+        "warning":          status_counts.get("WARNING", 0),
+        "critical":         status_counts.get("CRITICAL", 0),
+        "maintenance":      status_counts.get("MAINTENANCE", 0),
+        "open_alerts":      open_alerts,
+        "open_work_orders": open_wos,
+        "avg_health_score": round(avg_health, 1),
+        "timestamp":        datetime.now().isoformat()
+    }
+
+
+# ── GET /api/assets ────────────────────────────────────────────────────────────
+@app.get("/api/assets")
+async def list_assets(facility_id: int = Query(None)):
+    """List all monitored assets with latest health data."""
+    conn = get_connection()
+    if facility_id:
+        assets = [dict(r) for r in conn.execute(
+            "SELECT * FROM ASSETS WHERE facility_id=? ORDER BY status", (facility_id,)).fetchall()]
+    else:
+        assets = [dict(r) for r in conn.execute(
+            "SELECT * FROM ASSETS ORDER BY facility_id, status").fetchall()]
+
+    for a in assets:
+        health = conn.execute("""
+            SELECT health_score, health_status, risk_level, contributing_factors, evaluated_at
+            FROM EQUIPMENT_HEALTH WHERE asset_id=? ORDER BY evaluated_at DESC LIMIT 1
+        """, (a["asset_id"],)).fetchone()
+        if health:
+            h = dict(health)
+            a["health_score"]         = round(h["health_score"], 1)
+            a["health_status"]        = h["health_status"]
+            a["risk_level"]           = h["risk_level"]
+            a["contributing_factors"] = json.loads(h["contributing_factors"]) if h["contributing_factors"] else []
+            a["last_evaluated"]       = h["evaluated_at"]
+        else:
+            a["health_score"]  = None
+            a["health_status"] = a["status"]
+            a["risk_level"]    = "UNKNOWN"
+            a["contributing_factors"] = []
+            a["last_evaluated"] = None
+    conn.close()
+    return {"assets": assets, "total": len(assets)}
+
+
+# ── GET /api/assets/{asset_id} ────────────────────────────────────────────────
+@app.get("/api/assets/{asset_id}")
+async def asset_detail(asset_id: str):
+    """Full asset detail including telemetry history, health, alerts, and work orders."""
+    conn = get_connection()
+    asset = conn.execute("SELECT * FROM ASSETS WHERE asset_id=?", (asset_id,)).fetchone()
+    if not asset:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Asset {asset_id} not found")
+    a = dict(asset)
+
+    telemetry = [dict(r) for r in conn.execute("""
+        SELECT timestamp, temperature_c, vibration_mm_s, current_amps, voltage_v,
+               operating_hours, runtime_hours, is_abnormal, failure_risk
+        FROM ASSET_MONITORING_DATA WHERE asset_id=? ORDER BY timestamp DESC LIMIT 48
+    """, (asset_id,)).fetchall()]
+
+    health_history = [dict(r) for r in conn.execute("""
+        SELECT health_score, health_status, risk_level, contributing_factors, evaluated_at
+        FROM EQUIPMENT_HEALTH WHERE asset_id=? ORDER BY evaluated_at DESC LIMIT 10
+    """, (asset_id,)).fetchall()]
+
+    alerts = [dict(r) for r in conn.execute("""
+        SELECT * FROM MAINTENANCE_ALERTS WHERE asset_id=? ORDER BY created_at DESC LIMIT 10
+    """, (asset_id,)).fetchall()]
+
+    work_orders = [dict(r) for r in conn.execute("""
+        SELECT * FROM MAINTENANCE_WORK_ORDERS WHERE asset_id=? ORDER BY created_at DESC
+    """, (asset_id,)).fetchall()]
+
+    latest_pred = conn.execute("""
+        SELECT * FROM MAINTENANCE_PREDICTIONS WHERE asset_id=? ORDER BY predicted_at DESC LIMIT 1
+    """, (asset_id,)).fetchone()
+    conn.close()
+
+    return {
+        "asset":           a,
+        "telemetry":       telemetry,
+        "health_history":  health_history,
+        "alerts":          alerts,
+        "work_orders":     work_orders,
+        "latest_prediction": dict(latest_pred) if latest_pred else None
+    }
+
+
+# ── GET /api/assets/{asset_id}/health ─────────────────────────────────────────
+@app.get("/api/assets/{asset_id}/health")
+async def asset_health(asset_id: str):
+    """Run Maintenance Agent health evaluation for a specific asset."""
+    try:
+        result = get_maintenance_agent().evaluate_asset_health(asset_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return result
+
+
+# ── POST /api/maintenance/agent/analyze ───────────────────────────────────────
+@app.post("/api/maintenance/agent/analyze")
+async def maintenance_agent_analyze(req: MaintenanceAnalyzeRequest):
+    """Run Maintenance Agent — asset analysis or natural language Q&A."""
+    facility_or_404(req.facility_id)
+    agent = get_maintenance_agent()
+
+    if req.asset_id:
+        # Single asset health + prediction
+        try:
+            health     = agent.evaluate_asset_health(req.asset_id)
+            prediction = agent.predict_maintenance(req.asset_id)
+            anomaly    = agent.detect_abnormal_behavior(req.asset_id)
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        return {
+            "mode":       "asset_analysis",
+            "health":     health,
+            "prediction": prediction,
+            "anomaly":    anomaly,
+            "analyzed_at": datetime.now().isoformat()
+        }
+    elif req.question:
+        # Natural language Q&A
+        result = agent.answer_maintenance_query(req.question, req.facility_id)
+        return {"mode": "qa", **result}
+    else:
+        # Full facility analysis
+        all_results = agent.analyze_all_assets(req.facility_id)
+        critical = [r for r in all_results if r["health_status"] == "CRITICAL"]
+        warning  = [r for r in all_results if r["health_status"] == "WARNING"]
+        return {
+            "mode":           "full_analysis",
+            "facility_id":    req.facility_id,
+            "total_analyzed": len(all_results),
+            "critical":       len(critical),
+            "warning":        len(warning),
+            "healthy":        len(all_results) - len(critical) - len(warning),
+            "results":        all_results,
+            "analyzed_at":    datetime.now().isoformat()
+        }
+
+
+# ── GET /api/maintenance/predictions ─────────────────────────────────────────
+@app.get("/api/maintenance/predictions")
+async def maintenance_predictions(facility_id: int = Query(1)):
+    """Get latest maintenance predictions for all assets in a facility."""
+    facility_or_404(facility_id)
+    agent = get_maintenance_agent()
+    assets_conn = get_connection()
+    asset_ids = [r["asset_id"] for r in assets_conn.execute(
+        "SELECT asset_id FROM ASSETS WHERE facility_id=?", (facility_id,)).fetchall()]
+    assets_conn.close()
+
+    predictions = []
+    for aid in asset_ids:
+        try:
+            predictions.append(agent.predict_maintenance(aid))
+        except Exception:
+            pass
+
+    return {
+        "facility_id": facility_id,
+        "predictions": predictions,
+        "generated_at": datetime.now().isoformat()
+    }
+
+
+# ── GET /api/maintenance/alerts ───────────────────────────────────────────────
+@app.get("/api/maintenance/alerts")
+async def maintenance_alerts(facility_id: int = Query(1)):
+    """List all maintenance alerts for a facility."""
+    conn = get_connection()
+    rows = [dict(r) for r in conn.execute("""
+        SELECT ma.*, a.asset_name, a.asset_type
+        FROM MAINTENANCE_ALERTS ma
+        JOIN ASSETS a ON a.asset_id = ma.asset_id
+        WHERE ma.facility_id=?
+        ORDER BY
+          CASE ma.severity WHEN 'critical' THEN 0 WHEN 'warning' THEN 1 ELSE 2 END,
+          ma.created_at DESC
+    """, (facility_id,)).fetchall()]
+    conn.close()
+    return {
+        "facility_id": facility_id,
+        "alerts": rows,
+        "total": len(rows),
+        "active": sum(1 for r in rows if r["status"] in ["NEW", "ACKNOWLEDGED"])
+    }
+
+
+# ── POST /api/maintenance/alerts/{alert_id}/acknowledge ───────────────────────
+@app.post("/api/maintenance/alerts/{alert_id}/acknowledge")
+async def acknowledge_maintenance_alert(alert_id: int):
+    """Acknowledge a maintenance alert."""
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM MAINTENANCE_ALERTS WHERE alert_id=?", (alert_id,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Alert {alert_id} not found")
+    conn.execute("UPDATE MAINTENANCE_ALERTS SET status='ACKNOWLEDGED' WHERE alert_id=?", (alert_id,))
+    conn.commit(); conn.close()
+    return {"alert_id": alert_id, "status": "ACKNOWLEDGED", "updated_at": datetime.now().isoformat()}
+
+
+# ── POST /api/maintenance/alerts/{alert_id}/resolve ───────────────────────────
+@app.post("/api/maintenance/alerts/{alert_id}/resolve")
+async def resolve_maintenance_alert(alert_id: int):
+    """Resolve a maintenance alert."""
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM MAINTENANCE_ALERTS WHERE alert_id=?", (alert_id,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Alert {alert_id} not found")
+    conn.execute("UPDATE MAINTENANCE_ALERTS SET status='RESOLVED' WHERE alert_id=?", (alert_id,))
+    conn.commit(); conn.close()
+    return {"alert_id": alert_id, "status": "RESOLVED", "updated_at": datetime.now().isoformat()}
+
+
+# ── GET /api/maintenance/work-orders ─────────────────────────────────────────
+@app.get("/api/maintenance/work-orders")
+async def list_work_orders(facility_id: int = Query(None)):
+    """List maintenance work orders."""
+    conn = get_connection()
+    if facility_id:
+        rows = [dict(r) for r in conn.execute("""
+            SELECT wo.*, a.asset_name, a.asset_type
+            FROM MAINTENANCE_WORK_ORDERS wo
+            JOIN ASSETS a ON a.asset_id = wo.asset_id
+            WHERE wo.facility_id=? ORDER BY
+              CASE wo.priority WHEN 'URGENT' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END,
+              wo.created_at DESC
+        """, (facility_id,)).fetchall()]
+    else:
+        rows = [dict(r) for r in conn.execute("""
+            SELECT wo.*, a.asset_name, a.asset_type
+            FROM MAINTENANCE_WORK_ORDERS wo
+            JOIN ASSETS a ON a.asset_id = wo.asset_id
+            ORDER BY wo.created_at DESC
+        """).fetchall()]
+    conn.close()
+    return {"work_orders": rows, "total": len(rows)}
+
+
+# ── POST /api/maintenance/work-orders ─────────────────────────────────────────
+@app.post("/api/maintenance/work-orders")
+async def create_work_order(req: WorkOrderCreateRequest):
+    """Create a new maintenance work order."""
+    try:
+        wo = get_maintenance_agent().create_work_order(
+            req.asset_id, req.issue, req.priority, req.recommended_action)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return wo
+
+
+# ── PATCH /api/maintenance/work-orders/{work_order_id} ────────────────────────
+@app.patch("/api/maintenance/work-orders/{work_order_id}")
+async def update_work_order(work_order_id: str, req: WorkOrderUpdateRequest):
+    """Update the status of a maintenance work order."""
+    valid_statuses = ["OPEN", "IN_PROGRESS", "COMPLETED"]
+    if req.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Status must be one of {valid_statuses}")
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM MAINTENANCE_WORK_ORDERS WHERE work_order_id=?", (work_order_id,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Work order {work_order_id} not found")
+    conn.execute("""
+        UPDATE MAINTENANCE_WORK_ORDERS
+        SET status=?, updated_at=datetime('now')
+        WHERE work_order_id=?
+    """, (req.status, work_order_id))
+    conn.commit(); conn.close()
+    return {"work_order_id": work_order_id, "status": req.status, "updated_at": datetime.now().isoformat()}
 
 
 if __name__ == "__main__":

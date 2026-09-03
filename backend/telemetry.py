@@ -11,10 +11,7 @@ random.seed()   # fresh seed for live mode
 
 
 def live_tick(base_electricity: float = 220.0, base_hvac: float = 99.0) -> dict:
-    """
-    Generate a single live telemetry snapshot.
-    Called by the API every few seconds for live KPI updates.
-    """
+    
     now   = datetime.now()
     hour  = now.hour
     dow   = now.weekday()

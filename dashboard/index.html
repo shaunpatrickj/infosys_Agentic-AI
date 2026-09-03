@@ -43,6 +43,7 @@
     <nav class="nav-tabs">
       <button class="nav-tab active" id="tab-overview">Overview</button>
       <button class="nav-tab" id="tab-analytics">Analytics</button>
+      <button class="nav-tab" id="tab-maintenance">🔧 Maintenance</button>
       <button class="nav-tab" id="tab-agent">AI Agent</button>
       <button class="nav-tab" id="tab-alerts">Alerts <span class="badge">3</span></button>
     </nav>
@@ -379,53 +380,322 @@
 
       <!-- ════════════ VIEW 3: AI AGENT COMMAND CENTER ════════════ -->
       <div class="tab-view" id="view-agent">
-        <div class="view-header">
-          <div>
-            <h2>AI Energy Agent Command Center</h2>
-            <p>Real-time machine learning inference, automated optimizations, and Q&A</p>
-          </div>
-          <div class="agent-badge-live">
-            <span class="live-dot"></span>
-            <span>MODEL: ISOLATION FOREST + GRADIENT BOOSTING</span>
-          </div>
-        </div>
+        <!-- Agent Sidebar + Content layout -->
+        <div class="agent-fullpage-layout">
 
-        <div class="agent-view-layout">
-          <div class="chart-card agent-chat-card">
-            <h3 class="chart-title">Ask FacilityOps Agent</h3>
-            <p class="chart-sub">Ask diagnostic questions about your facility's energy performance</p>
-
-            <div class="prompt-chips">
-              <button class="chip" onclick="askAgentQuestion('How can we optimize HVAC efficiency?')">⚡ Optimize HVAC</button>
-              <button class="chip" onclick="askAgentQuestion('What is the forecasted peak demand?')">📈 Peak Demand Forecast</button>
-              <button class="chip" onclick="askAgentQuestion('Are there any water leaks detected?')">💧 Water Leak Check</button>
-              <button class="chip" onclick="askAgentQuestion('Summarize energy anomalies in the last 24 hours')">🔍 Anomaly Summary</button>
+          <!-- ── AGENT SIDEBAR ── -->
+          <aside class="agent-sidebar">
+            <div class="agent-sidebar-header">
+              <span class="sidebar-label">AI AGENTS</span>
             </div>
+            <div class="agent-sidebar-list">
+              <div class="agent-sidebar-item active" id="agentNav-energy" onclick="switchAgentView('energy')">
+                <div class="agent-nav-icon" style="--ac:#00E5FF">
+                  <svg viewBox="0 0 20 20" fill="none"><path d="M10 2L4 10h6l-1 8 7-10h-6l1-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="agent-nav-text">
+                  <span class="agent-nav-name">Energy Agent</span>
+                  <span class="agent-nav-sub">M1 · Active</span>
+                </div>
+                <span class="agent-nav-badge online"></span>
+              </div>
 
-            <div class="agent-chat-log" id="agentChatLog">
-              <div class="chat-bubble agent">
-                <span class="chat-author">🤖 Energy Agent</span>
-                <p>Hello! I am monitoring your facility's energy telemetry. All models are trained and operational (Isolation Forest accuracy: <strong>96.2%</strong>). Click a suggestion above or ask me anything.</p>
+              <div class="agent-sidebar-item" id="agentNav-maintenance" onclick="switchAgentView('maintenance')">
+                <div class="agent-nav-icon" style="--ac:#34D399">
+                  <svg viewBox="0 0 20 20" fill="none"><path d="M15.5 4.5a3 3 0 00-4.24 4.24L4 16l1 1 7.26-7.26A3 3 0 0015.5 4.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <div class="agent-nav-text">
+                  <span class="agent-nav-name">Maintenance Agent</span>
+                  <span class="agent-nav-sub">M2 · Active</span>
+                </div>
+                <span class="agent-nav-badge online"></span>
+              </div>
+
+              <div class="agent-sidebar-item disabled" id="agentNav-occupancy">
+                <div class="agent-nav-icon" style="--ac:#A78BFA; opacity:0.4">
+                  <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M4 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <div class="agent-nav-text" style="opacity:0.45">
+                  <span class="agent-nav-name">Occupancy Agent</span>
+                  <span class="agent-nav-sub">M3 · Upcoming</span>
+                </div>
+                <span class="agent-nav-badge offline"></span>
+              </div>
+
+              <div class="agent-sidebar-item disabled" id="agentNav-security">
+                <div class="agent-nav-icon" style="--ac:#F87171; opacity:0.4">
+                  <svg viewBox="0 0 20 20" fill="none"><path d="M10 2L4 5v5c0 3.87 2.6 7.5 6 8.5 3.4-1 6-4.63 6-8.5V5L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="agent-nav-text" style="opacity:0.45">
+                  <span class="agent-nav-name">Security Agent</span>
+                  <span class="agent-nav-sub">M3 · Upcoming</span>
+                </div>
+                <span class="agent-nav-badge offline"></span>
+              </div>
+
+              <div class="agent-sidebar-item disabled" id="agentNav-cost">
+                <div class="agent-nav-icon" style="--ac:#FCD34D; opacity:0.4">
+                  <svg viewBox="0 0 20 20" fill="none"><path d="M10 2v16M14 5.5H8a2.5 2.5 0 000 5h4a2.5 2.5 0 010 5H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <div class="agent-nav-text" style="opacity:0.45">
+                  <span class="agent-nav-name">Cost Optimizer</span>
+                  <span class="agent-nav-sub">M4 · Upcoming</span>
+                </div>
+                <span class="agent-nav-badge offline"></span>
               </div>
             </div>
+          </aside>
 
-            <div class="agent-input-row" style="margin-top:14px">
-              <input type="text" class="agent-input" id="agentChatInput" placeholder="Ask about HVAC, peak demand, tariffs, anomalies..." />
-              <button class="agent-send" id="agentChatSend">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><line x1="22" y1="2" x2="11" y2="13" stroke="currentColor" stroke-width="2"/><polygon points="22 2 15 22 11 13 2 9 22 2" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-              </button>
-            </div>
+          <!-- ── AGENT CONTENT AREA ── -->
+          <div class="agent-content-area">
+
+            <!-- ENERGY AGENT PANEL -->
+            <div class="agent-panel active" id="agentPanel-energy">
+              <div class="view-header">
+                <div>
+                  <h2>Energy Intelligence Agent</h2>
+                  <p>Real-time ML inference, automated optimizations, and diagnostic Q&A</p>
+                </div>
+                <div class="agent-badge-live">
+                  <span class="live-dot"></span>
+                  <span>MODEL: ISOLATION FOREST + GRADIENT BOOSTING</span>
+                </div>
+              </div>
+              <div class="agent-view-layout">
+                <div class="chart-card agent-chat-card">
+                  <h3 class="chart-title">Ask Energy Agent</h3>
+                  <p class="chart-sub">Ask diagnostic questions about your facility's energy performance</p>
+                  <div class="prompt-chips">
+                    <button class="chip" onclick="askAgentQuestion('How can we optimize HVAC efficiency?')">⚡ Optimize HVAC</button>
+                    <button class="chip" onclick="askAgentQuestion('What is the forecasted peak demand?')">📈 Peak Demand Forecast</button>
+                    <button class="chip" onclick="askAgentQuestion('Are there any water leaks detected?')">💧 Water Leak Check</button>
+                    <button class="chip" onclick="askAgentQuestion('Summarize energy anomalies in the last 24 hours')">🔍 Anomaly Summary</button>
+                  </div>
+                  <div class="agent-chat-log" id="agentChatLog">
+                    <div class="chat-bubble agent">
+                      <span class="chat-author">⚡ Energy Agent</span>
+                      <p>Hello! I am monitoring your facility's energy telemetry. All models are trained and operational. Click a suggestion above or ask me anything.</p>
+                    </div>
+                  </div>
+                  <div class="agent-input-row" style="margin-top:14px">
+                    <input type="text" class="agent-input" id="agentChatInput" placeholder="Ask about HVAC, peak demand, tariffs, anomalies..." />
+                    <button class="agent-send" id="agentChatSend">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><line x1="22" y1="2" x2="11" y2="13" stroke="currentColor" stroke-width="2"/><polygon points="22 2 15 22 11 13 2 9 22 2" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <h3 class="chart-title">Active AI Recommendations</h3>
+                    <button class="qa-btn" id="btnApplyAllOpt" style="width:auto;padding:5px 12px;font-size:0.75rem">Apply Optimizations</button>
+                  </div>
+                  <div class="agent-insights" id="agentViewInsights" style="max-height:400px"></div>
+                </div>
+              </div>
+            </div><!-- end agentPanel-energy -->
+
+            <!-- MAINTENANCE AGENT PANEL -->
+            <div class="agent-panel" id="agentPanel-maintenance">
+              <div class="view-header">
+                <div>
+                  <h2>Predictive Maintenance Agent</h2>
+                  <p>Equipment condition analysis, health scoring, and maintenance intelligence Q&A</p>
+                </div>
+                <div class="agent-badge-live" style="--badge-color:#34D399">
+                  <span class="live-dot" style="background:#34D399"></span>
+                  <span>ENGINE: MULTI-FACTOR HEALTH SCORING + THRESHOLD DETECTION</span>
+                </div>
+              </div>
+              <div class="agent-view-layout">
+                <div class="chart-card agent-chat-card">
+                  <h3 class="chart-title">Ask Maintenance Agent</h3>
+                  <p class="chart-sub">Query equipment health, alerts, and maintenance priorities</p>
+                  <div class="prompt-chips">
+                    <button class="chip" onclick="askMaintenanceQuestion('Give me a full maintenance status overview')">📊 Facility Overview</button>
+                    <button class="chip" onclick="askMaintenanceQuestion('Which assets are in critical condition?')">🔴 Critical Assets</button>
+                    <button class="chip" onclick="askMaintenanceQuestion('Are there any vibration anomalies detected?')">📳 Vibration Check</button>
+                    <button class="chip" onclick="askMaintenanceQuestion('List all open work orders and maintenance tickets')">🔧 Work Orders</button>
+                  </div>
+                  <div class="agent-chat-log" id="maintChatLog">
+                    <div class="chat-bubble agent" style="--bubble-color:rgba(52,211,153,0.08)">
+                      <span class="chat-author" style="color:#34D399">🔧 Maintenance Agent</span>
+                      <p>Hello! I am monitoring <strong>13 facility assets</strong> across all facilities. I track equipment health scores, vibration levels, thermal conditions, and predict maintenance requirements. Ask me anything about your equipment.</p>
+                    </div>
+                  </div>
+                  <div class="agent-input-row" style="margin-top:14px">
+                    <input type="text" class="agent-input" id="maintChatInput" placeholder="Ask about equipment health, alerts, work orders..." />
+                    <button class="agent-send" id="maintChatSend" style="background:linear-gradient(135deg,#34D399,#059669)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><line x1="22" y1="2" x2="11" y2="13" stroke="currentColor" stroke-width="2"/><polygon points="22 2 15 22 11 13 2 9 22 2" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <h3 class="chart-title">Asset Health Summary</h3>
+                    <button class="qa-btn" id="btnRunMaintAgent" style="width:auto;padding:5px 12px;font-size:0.75rem;background:linear-gradient(135deg,rgba(52,211,153,0.15),rgba(5,150,105,0.15));border-color:rgba(52,211,153,0.4)">🔧 Analyze All Assets</button>
+                  </div>
+                  <div class="agent-insights" id="maintAgentInsights" style="max-height:400px"></div>
+                </div>
+              </div>
+            </div><!-- end agentPanel-maintenance -->
+
+          </div><!-- end agent-content-area -->
+        </div><!-- end agent-fullpage-layout -->
+      </div><!-- end view-agent -->
+
+      <!-- ════════════ VIEW 5: PREDICTIVE MAINTENANCE ════════════ -->
+      <div class="tab-view" id="view-maintenance">
+        <div class="view-header">
+          <div>
+            <h2>Predictive Maintenance System</h2>
+            <p>Equipment health monitoring, risk prediction, and maintenance work orders — powered by Maintenance Agent</p>
           </div>
-
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3 class="chart-title">Active AI Recommendations</h3>
-              <button class="qa-btn" id="btnApplyAllOpt" style="width:auto;padding:5px 12px;font-size:0.75rem">Apply Optimizations</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="agent-badge-live" style="--badge-color:#34D399">
+              <span class="live-dot" style="background:#34D399"></span>
+              <span>MAINTENANCE AGENT ACTIVE</span>
             </div>
-            <div class="agent-insights" id="agentViewInsights" style="max-height:400px"></div>
+            <button class="qa-btn" id="btnRunAllAssets" style="width:auto;padding:6px 14px;font-size:0.75rem">🔧 Analyze All Assets</button>
           </div>
         </div>
-      </div><!-- end view-agent -->
+
+        <!-- KPI CARDS -->
+        <div class="kpi-row" id="maintKpiRow">
+          <div class="kpi-card">
+            <div class="kpi-icon-ring" style="--kc:#00E5FF">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/></svg>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-label">Assets Monitored</span>
+              <div class="kpi-value-row"><span class="kpi-value" id="maint-kpi-total">—</span></div>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon-ring" style="--kc:#34D399">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-label">Healthy Assets</span>
+              <div class="kpi-value-row"><span class="kpi-value" id="maint-kpi-healthy" style="color:#34D399">—</span></div>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon-ring" style="--kc:#FCD34D">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-label">Warning Assets</span>
+              <div class="kpi-value-row"><span class="kpi-value" id="maint-kpi-warning" style="color:#FCD34D">—</span></div>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon-ring" style="--kc:#F87171">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-label">Critical Assets</span>
+              <div class="kpi-value-row"><span class="kpi-value" id="maint-kpi-critical" style="color:#F87171">—</span></div>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon-ring" style="--kc:#A78BFA">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-label">Active Alerts</span>
+              <div class="kpi-value-row"><span class="kpi-value" id="maint-kpi-alerts" style="color:#A78BFA">—</span></div>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon-ring" style="--kc:#FB923C">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="2"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2"/></svg>
+            </div>
+            <div class="kpi-body">
+              <span class="kpi-label">Open Work Orders</span>
+              <div class="kpi-value-row"><span class="kpi-value" id="maint-kpi-wo" style="color:#FB923C">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHARTS ROW (OPTIMIZED & COMPACT) -->
+        <div class="maint-charts-grid">
+          <div class="chart-card maint-chart-card">
+            <div class="chart-header" style="margin-bottom: 8px;">
+              <div>
+                <h3 class="chart-title">Equipment Health Distribution</h3>
+                <p class="chart-sub">Asset health status breakdown</p>
+              </div>
+            </div>
+            <div class="maint-chart-wrap">
+              <canvas id="healthDistChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card maint-chart-card">
+            <div class="chart-header" style="margin-bottom: 8px;">
+              <div>
+                <h3 class="chart-title">Maintenance Risk Distribution</h3>
+                <p class="chart-sub">Asset count by risk classification level</p>
+              </div>
+            </div>
+            <div class="maint-chart-wrap">
+              <canvas id="riskDistChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- ASSET TABLE -->
+        <div class="chart-card" style="margin-bottom:20px">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Asset Health & Maintenance Register</h3>
+              <p class="chart-sub">Click any asset row to inspect details and sensor telemetry</p>
+            </div>
+            <div style="display:flex;gap:8px">
+              <select id="assetRiskFilter" class="agent-input" style="width:auto;padding:5px 10px;font-size:0.75rem">
+                <option value="all">All Risk Levels</option>
+                <option value="CRITICAL">Critical Only</option>
+                <option value="HIGH">High Risk</option>
+                <option value="MEDIUM">Medium Risk</option>
+                <option value="LOW">Low Risk</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="assetTable">
+              <thead>
+                <tr>
+                  <th>Asset</th><th>Type</th><th>Zone</th>
+                  <th>Health</th><th>Status</th><th>Risk</th>
+                  <th>Last Maintenance</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="assetTableBody"><!-- JS populated --></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- MAINTENANCE ALERTS -->
+        <div class="chart-row" style="margin-bottom:20px">
+          <div class="chart-card" style="flex:3">
+            <div class="chart-header">
+              <h3 class="chart-title">Active Maintenance Alerts</h3>
+              <div style="display:flex;gap:6px">
+                <button class="filter-btn active" data-mfilter="all">All</button>
+                <button class="filter-btn" data-mfilter="critical">🔴 Critical</button>
+                <button class="filter-btn" data-mfilter="warning">⚡ Warning</button>
+              </div>
+            </div>
+            <div class="alerts-list-full" id="maintAlertsList"></div>
+          </div>
+          <div class="chart-card" style="flex:2">
+            <div class="chart-header">
+              <h3 class="chart-title">Work Orders</h3>
+              <button class="qa-btn" id="btnCreateWO" style="width:auto;padding:5px 12px;font-size:0.75rem">+ New Work Order</button>
+            </div>
+            <div id="workOrdersList" style="display:flex;flex-direction:column;gap:10px"></div>
+          </div>
+        </div>
+      </div><!-- end view-maintenance -->
 
       <!-- ════════════ VIEW 4: ALERTS MANAGEMENT ════════════ -->
       <div class="tab-view" id="view-alerts">

@@ -1,0 +1,14 @@
+asset_id,facility_id,asset_name,asset_type,location_zone,status,installation_date,last_maintenance_date,operating_hours,created_at
+HVAC-AHU-001,1,Primary Air Handling Unit 1,AHU,Floor 1-3,EXCELLENT,2023-01-15,2026-08-01,14200.0,2026-09-03 14:47:19
+CHILLER-001,1,Main Centrifugal Chiller,Chiller,Basement Plant,WARNING,2022-05-10,2026-07-15,18500.0,2026-09-03 14:47:19
+PUMP-001,1,Chilled Water Pump 1,Pump,Basement Plant,EXCELLENT,2023-03-20,2026-08-10,12100.0,2026-09-03 14:47:19
+XFRM-001,1,Main Incomer Transformer,Transformer,Substation A,GOOD,2021-11-01,2026-06-01,24000.0,2026-09-03 14:47:19
+ELEV-001,1,Passenger Elevator Bank A,Elevator,Main Lobby,EXCELLENT,2022-09-12,2026-08-05,9800.0,2026-09-03 14:47:19
+HVAC-AHU-002,2,Secondary AHU Unit 2,AHU,Block 2 Wing A,EXCELLENT,2023-02-18,2026-07-28,11500.0,2026-09-03 14:47:19
+PUMP-002,2,Secondary Water Circulation Pump,Pump,Plant Room B,CRITICAL,2022-03-14,2026-05-10,16800.0,2026-09-03 14:47:19
+GENSET-001,2,500kVA Diesel Generator,Genset,Power Yard,EXCELLENT,2021-08-05,2026-08-15,4200.0,2026-09-03 14:47:19
+HVAC-AHU-003,3,Auditorium AHU Unit 3,AHU,Main Hall,WARNING,2023-04-01,2026-06-20,8900.0,2026-09-03 14:47:19
+PUMP-003,3,Condenser Water Pump 3,Pump,Mechanical Room,EXCELLENT,2022-10-10,2026-08-12,10200.0,2026-09-03 14:47:19
+CRAC-001,4,Precision Air Conditioner 1,AHU,Server Room A,EXCELLENT,2023-06-01,2026-08-18,15600.0,2026-09-03 14:47:19
+CRAC-002,4,Precision Air Conditioner 2,AHU,Server Room B,WARNING,2023-06-01,2026-07-02,15800.0,2026-09-03 14:47:19
+UPS-001,4,250kVA Modular UPS System,Transformer,Battery Room,GOOD,2022-01-20,2026-08-01,21500.0,2026-09-03 14:47:19

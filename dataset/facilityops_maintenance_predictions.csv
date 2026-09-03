@@ -1,0 +1,9 @@
+prediction_id,asset_id,risk_level,priority,prediction_text,recommended_action,confidence,predicted_at
+1,HVAC-AHU-001,LOW,NORMAL,Equipment operating at peak health index.,No immediate maintenance required. Maintain standard PM schedule.,0.95,2026-09-03 14:56:52
+2,CHILLER-001,MEDIUM,RECOMMENDED,Accelerated component degradation detected; close monitoring advised.,Schedule preventive maintenance within the next maintenance cycle.,0.85,2026-09-03 14:56:52
+3,PUMP-001,LOW,NORMAL,Equipment operating at peak health index.,No immediate maintenance required. Maintain standard PM schedule.,0.95,2026-09-03 14:56:52
+4,XFRM-001,LOW,NORMAL,Equipment operating at peak health index.,No immediate maintenance required. Maintain standard PM schedule.,0.95,2026-09-03 14:56:52
+5,ELEV-001,LOW,NORMAL,Equipment operating at peak health index.,No immediate maintenance required. Maintain standard PM schedule.,0.95,2026-09-03 14:56:52
+6,PUMP-002,HIGH,URGENT,High probability of functional breakdown under peak load.,Urgent maintenance required within 24–48 hours to prevent forced outage.,0.92,2026-09-03 14:56:52
+7,GENSET-001,LOW,NORMAL,Equipment operating at peak health index.,No immediate maintenance required. Maintain standard PM schedule.,0.95,2026-09-03 14:56:52
+8,CRAC-001,LOW,NORMAL,Equipment operating at peak health index.,No immediate maintenance required. Maintain standard PM schedule.,0.95,2026-09-03 14:56:52

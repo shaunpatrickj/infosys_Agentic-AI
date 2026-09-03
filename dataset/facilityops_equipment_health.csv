@@ -1,0 +1,30 @@
+health_id,asset_id,health_score,health_status,risk_level,contributing_factors,evaluated_at
+1,CRAC-001,92.0,EXCELLENT,LOW,"[""Moderate cumulative wear (15,722 hrs)""]",2026-09-03 14:49:48
+2,CRAC-002,64.72,WARNING,MEDIUM,"[""Temperature approaching threshold (28.7\u00b0C)"", ""Abnormal vibration (2.66 mm/s vs max 2.5 mm/s)"", ""Moderate cumulative wear (15,921 hrs)"", ""Equipment status set to WARNING""]",2026-09-03 14:49:48
+3,UPS-001,85.0,GOOD,LOW,"[""High cumulative operating hours (21,668 hrs \u2014 approaching overhaul interval)""]",2026-09-03 14:49:48
+4,HVAC-AHU-001,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:53:42
+5,CHILLER-001,72.0,WARNING,MEDIUM,"[""Temperature approaching threshold (46.9\u00b0C)"", ""Vibration approaching warning threshold (3.63 mm/s)"", ""Moderate cumulative wear (18,668 hrs)""]",2026-09-03 14:53:42
+6,PUMP-001,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:53:42
+7,XFRM-001,85.0,GOOD,LOW,"[""High cumulative operating hours (24,168 hrs \u2014 approaching overhaul interval)""]",2026-09-03 14:53:42
+8,ELEV-001,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:53:42
+9,CHILLER-001,72.0,WARNING,MEDIUM,"[""Temperature approaching threshold (46.9\u00b0C)"", ""Vibration approaching warning threshold (3.63 mm/s)"", ""Moderate cumulative wear (18,668 hrs)""]",2026-09-03 14:56:51
+10,CRAC-001,92.0,EXCELLENT,LOW,"[""Moderate cumulative wear (15,722 hrs)""]",2026-09-03 14:56:51
+11,CRAC-002,64.72,WARNING,MEDIUM,"[""Temperature approaching threshold (28.7\u00b0C)"", ""Abnormal vibration (2.66 mm/s vs max 2.5 mm/s)"", ""Moderate cumulative wear (15,921 hrs)"", ""Equipment status set to WARNING""]",2026-09-03 14:56:51
+12,ELEV-001,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:56:52
+13,GENSET-001,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:56:52
+14,HVAC-AHU-001,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:56:52
+15,HVAC-AHU-002,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:56:52
+16,HVAC-AHU-003,72.0,WARNING,MEDIUM,"[""Temperature approaching threshold (28.2\u00b0C)"", ""Vibration approaching warning threshold (2.46 mm/s)""]",2026-09-03 14:56:52
+17,PUMP-001,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:56:52
+18,PUMP-002,41.63999999999999,CRITICAL,HIGH,"[""Elevated operating temperature (48.6\u00b0C vs max 45.0\u00b0C)"", ""Abnormal vibration (4.07 mm/s vs max 2.8 mm/s)"", ""Moderate cumulative wear (16,922 hrs)"", ""Equipment manually flagged as CRITICAL status""]",2026-09-03 14:56:52
+19,PUMP-003,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:56:52
+20,UPS-001,85.0,GOOD,LOW,"[""High cumulative operating hours (21,668 hrs \u2014 approaching overhaul interval)""]",2026-09-03 14:56:52
+21,XFRM-001,85.0,GOOD,LOW,"[""High cumulative operating hours (24,168 hrs \u2014 approaching overhaul interval)""]",2026-09-03 14:56:52
+22,HVAC-AHU-001,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:56:52
+23,CHILLER-001,72.0,WARNING,MEDIUM,"[""Temperature approaching threshold (46.9\u00b0C)"", ""Vibration approaching warning threshold (3.63 mm/s)"", ""Moderate cumulative wear (18,668 hrs)""]",2026-09-03 14:56:52
+24,PUMP-001,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:56:52
+25,XFRM-001,85.0,GOOD,LOW,"[""High cumulative operating hours (24,168 hrs \u2014 approaching overhaul interval)""]",2026-09-03 14:56:52
+26,ELEV-001,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:56:52
+27,PUMP-002,41.63999999999999,CRITICAL,HIGH,"[""Elevated operating temperature (48.6\u00b0C vs max 45.0\u00b0C)"", ""Abnormal vibration (4.07 mm/s vs max 2.8 mm/s)"", ""Moderate cumulative wear (16,922 hrs)"", ""Equipment manually flagged as CRITICAL status""]",2026-09-03 14:56:52
+28,GENSET-001,100.0,EXCELLENT,LOW,"[""All monitored parameters operating within normal tolerance limits""]",2026-09-03 14:56:52
+29,CRAC-001,92.0,EXCELLENT,LOW,"[""Moderate cumulative wear (15,722 hrs)""]",2026-09-03 14:56:52
